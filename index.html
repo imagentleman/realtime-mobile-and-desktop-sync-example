@@ -1,0 +1,64 @@
+<html>
+<head>
+  <title>Mobile Desktop Sync</title>
+  <style>* {margin: 0;} canvas { width: 100% !important; height: 100% !important }</style>
+</head>
+<body>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    var socket = io.connect('http://localhost');
+    socket.on('relaying', function (data) {
+      camera.rotation.x = data.x;
+      camera.rotation.y = data.y;
+    });
+  </script>
+  <script src="https://rawgithub.com/mrdoob/three.js/master/build/three.js"></script>
+  <script>
+
+  var camera, scene, renderer;
+  var geometry, material, mesh;
+
+  init();
+  animate();
+
+  function init() {
+      camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
+      camera.position.z = 1000;
+
+      scene = new THREE.Scene();
+
+      geometry = new THREE.BoxGeometry( 200, 200, 200 );
+      material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true } );
+
+      mesh = new THREE.Mesh( geometry, material );
+      scene.add( mesh );
+
+      renderer = new THREE.WebGLRenderer({alpha: true});
+      renderer.setSize( window.innerWidth, window.innerHeight );
+
+      document.body.appendChild( renderer.domElement );
+
+      if (window.DeviceOrientationEvent) { console.log("exists")
+        window.addEventListener('deviceorientation', function(eventData) { console.log(eventData)
+          var dir = eventData.gamma;
+          var tiltLR = eventData.beta;
+          var tiltFB = eventData.alpha
+          deviceOrientationHandler(tiltLR, tiltFB, dir);
+          }, false);
+      }
+
+  }
+
+  function animate() {
+      requestAnimationFrame( animate );
+      renderer.render( scene, camera );
+  }
+
+  function deviceOrientationHandler(tiltLR, tiltFB, dir) {
+    camera.rotation.x = tiltFB * Math.PI / 180;
+    camera.rotation.y = tiltLR * Math.PI / 180;
+    socket.emit('relay', {x: tiltFB * Math.PI / 180, y: tiltLR * Math.PI / 180});
+  }
+
+</script>
+
